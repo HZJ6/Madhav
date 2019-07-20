@@ -5,7 +5,10 @@
 #ifndef MADHAV_GAME_H
 #define MADHAV_GAME_H
 #include <SDL2/SDL.h>
-#include <cstdlib>
+#include <cmath>
+#include <vector>
+#include <random>
+#include <ctime>
 
 class Game{
 public:
@@ -20,6 +23,11 @@ private:
     struct Vector2{
         float x;
         float y;
+    };
+
+    struct Ball{
+        Vector2 ballPos;
+        Vector2 ballVel;
     };
 
     // Helper functions for the game loop
@@ -39,14 +47,16 @@ private:
     const Uint8 paddleH = 100;
     // The paddle
     Vector2 mPaddlePos;
-    // The ball
-    Vector2 mBallPos;
-    // The balls velocity (speed and direction)
-    Vector2 mBallVel;
+    // Container for the balls
+    std::vector<Ball> balls;
     // Track the number of ticks
     Uint32 mTicksCount;
     // Track paddle movement
     int mPaddleDir;
+    // Game setup parameters
+    Uint8 ballCount = 3;
+    Uint16 ballSpeed = 500;
+    Uint8 paddleSpeed = 2;
 };
 
 #endif //MADHAV_GAME_H

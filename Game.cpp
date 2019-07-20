@@ -45,11 +45,19 @@ bool Game::Initialize() {
     mPaddlePos.x = thickness;
     mPaddlePos.y = 768 / 2.0f;
 
-    mBallPos.x = 1028 / 2.0f;
-    mBallPos.y = 768 / 2.0f;
-
-    mBallVel.x = -200.0f;
-    mBallVel.y = 235.0f;
+    Ball* ball = nullptr;
+    srand(time(nullptr));
+    double randomAngle;
+    for(int i = 0; i < ballCount; ++i){
+        randomAngle = M_PI * (((rand() % 120)-60)/180.0f);
+        ball = new Ball();
+        ball->ballPos.x = 1028/2.0f;
+        ball->ballPos.y = 768/2.0f;
+        ball->ballVel.x = static_cast<float>(cos(randomAngle))*ballSpeed;
+        ball->ballVel.y = static_cast<float>(sin(randomAngle))*ballSpeed;
+        balls.push_back(*ball);
+    }
+    ball = nullptr;
 
     mTicksCount = 0;
 
@@ -89,10 +97,10 @@ void Game::ProcessInput() {
 
     mPaddleDir = 0;
     if(state[SDL_SCANCODE_W]){
-        mPaddleDir -= 1;
+        mPaddleDir -= paddleSpeed;
     }
     if(state[SDL_SCANCODE_S]){
-        mPaddleDir += 1;
+        mPaddleDir += paddleSpeed;
     }
     // Check state of keyboard for ESC press, which exits.
     if(state[SDL_SCANCODE_ESCAPE]){
@@ -131,27 +139,30 @@ void Game::UpdateGame() {
     }
 
     // Update the balls velocity depending on surface contact
-    if(mBallPos.y - thickness/2.0f <= thickness && mBallVel.y < 0.0f)
-    {
-        mBallVel.y *= -1;
-    }
-    if(mBallPos.y + thickness/2.0f >= (768 - thickness) && mBallVel.y > 0.0f){
-        mBallVel.y *= -1;
-    }
-    if(mBallPos.x + thickness/2.0f >= (1028 - thickness) && mBallVel.x > 0.0f){
-        mBallVel.x *= -1;
-    }
-    int diff = abs(static_cast<int>(mBallPos.y) - static_cast<int>(mPaddlePos.y));
-    if(diff <= paddleH/2.0f
-            && mBallPos.x <= mPaddlePos.x + thickness
-            && mBallPos.x - thickness/2.0f > mPaddlePos.x
-            && mBallVel.x < 0.0f){
-        mBallVel.x *= -1.0f;
+    for(auto &ball : balls){
+        if(ball.ballPos.y - thickness/2.0f <= thickness && ball.ballVel.y < 0.0f)
+        {
+            ball.ballVel.y *= -1;
+        }
+        if(ball.ballPos.y + thickness/2.0f >= (768 - thickness) && ball.ballVel.y > 0.0f){
+            ball.ballVel.y *= -1;
+        }
+        if(ball.ballPos.x + thickness/2.0f >= (1028 - thickness) && ball.ballVel.x > 0.0f){
+            ball.ballVel.x *= -1;
+        }
+        int diff = abs(static_cast<int>(ball.ballPos.y) - static_cast<int>(mPaddlePos.y));
+        if(diff <= paddleH/2.0f
+           && ball.ballPos.x <= mPaddlePos.x + thickness
+           && ball.ballPos.x - thickness/2.0f > mPaddlePos.x
+           && ball.ballVel.x < 0.0f){
+            ball.ballVel.x *= -1.0f;
+        }
+
+        // Move balls position
+        ball.ballPos.x += ball.ballVel.x * deltaTime;
+        ball.ballPos.y += ball.ballVel.y * deltaTime;
     }
 
-    // Move balls position
-    mBallPos.x += mBallVel.x * deltaTime;
-    mBallPos.y += mBallVel.y * deltaTime;
 }
 
 void Game::GenerateOutput() {
@@ -164,6 +175,23 @@ void Game::GenerateOutput() {
     );
 
     SDL_RenderClear(mRenderer);
+
+    SDL_SetRenderDrawColor(
+            mRenderer,  // SDL_Renderer
+            0,          // R
+            0,          // G
+            0,          // B
+            255         // A
+    );
+
+    SDL_Rect leftWall{
+            0,                   // X
+            thickness,           // y
+            3 * thickness,       // width
+            768 - 2 * thickness  // height
+    };
+
+    SDL_RenderFillRect(mRenderer, &leftWall);
 
     SDL_SetRenderDrawColor(
             mRenderer,
@@ -194,24 +222,27 @@ void Game::GenerateOutput() {
             thickness         // Height
     };
 
-    SDL_Rect ball{
-            static_cast<int>(mBallPos.x - thickness / 2.0f),  // x
-            static_cast<int>(mBallPos.y - thickness / 2.0f),  // y
-            thickness,                                        // Width
-            thickness                                         // Height
-    };
+    SDL_Rect* ballImage = nullptr;
+    for(auto &ball : balls){
+        ballImage = new SDL_Rect();
+        ballImage->x = static_cast<int>(ball.ballPos.x - thickness / 2.0f);  // x
+        ballImage->y = static_cast<int>(ball.ballPos.y - thickness / 2.0f);  // y
+        ballImage->w = thickness;                                            // Width
+        ballImage->h = thickness;                                            // Height
+        SDL_RenderFillRect(mRenderer, ballImage);
+    }
+    ballImage = nullptr;
 
     SDL_Rect paddle{
-            static_cast<int>(mPaddlePos.x),                     // x
+            static_cast<int>(mPaddlePos.x),                   // x
             static_cast<int>(mPaddlePos.y - paddleH / 2.0f),  // y
-            thickness,                                          // Width
-            paddleH                                       // Height
+            thickness,                                        // Width
+            paddleH                                           // Height
     };
 
     SDL_RenderFillRect(mRenderer, &topWall);
     SDL_RenderFillRect(mRenderer, &rightWall);
     SDL_RenderFillRect(mRenderer, &botWall);
-    SDL_RenderFillRect(mRenderer, &ball);
     SDL_RenderFillRect(mRenderer, &paddle);
 
     SDL_RenderPresent(mRenderer);
