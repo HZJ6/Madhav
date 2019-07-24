@@ -2,10 +2,18 @@
 // Created by Mike on 7/18/2019.
 //
 #include "Game.h"
-
+#include "SDL2/SDL_image.h"
+#include <algorithm>
+#include "Actor.h"
+#include "SpriteComponent.h"
+#include "BGSpriteComponent.h"
 
 // --- Constructors / Destructors ---
-Game::Game() : mWindow(nullptr), mIsRunning(true){
+Game::Game()
+    : mWindow(nullptr)
+    , mRenderer(nullptr)
+    , mIsRunning(true)
+    , mUpdatingActors(false){
 
 }
 
@@ -21,8 +29,8 @@ bool Game::Initialize() {
     mWindow = SDL_CreateWindow("Game Programming in C++ (Chapter 1)", // Window Title
             100,  // Top left x-coordinate of window
             100,  // Top left y-coordinate of window
-            1024, // Width of window
-            768,  // Height of window
+            SCREEN_WIDTH, // Width of window
+            SCREEN_HEIGHT,  // Height of window
             0     // Flags (0=none set)
     );
 
@@ -42,22 +50,35 @@ bool Game::Initialize() {
         return false;
     }
 
-    mPaddlePos.x = thickness;
-    mPaddlePos.y = 768 / 2.0f;
+    if(IMG_Init(IMG_INIT_PNG) == 0){
+        SDL_Log("Unable to initialize SDL_image: %s", SDL_GetError());
+        return false;
+    }
 
+    // TODO: Move paddle starting position into Actor Paddle object
+    // TODO: Add code to create paddle object and player component
+    mPaddlePos.x = THICKNESS;
+    mPaddlePos.y = SCREEN_HEIGHT / 2.0f;
+
+    // TODO: Move ball creation into ball Actor objects
+    // TODO: Add code to create ball objects
     Ball* ball = nullptr;
     srand(time(nullptr));
     double randomAngle;
     for(int i = 0; i < ballCount; ++i){
         randomAngle = M_PI * (((rand() % 120)-60)/180.0f);
         ball = new Ball();
-        ball->ballPos.x = 1028/2.0f;
-        ball->ballPos.y = 768/2.0f;
+        ball->ballPos.x = SCREEN_WIDTH/2.0f;
+        ball->ballPos.y = SCREEN_HEIGHT/2.0f;
         ball->ballVel.x = static_cast<float>(cos(randomAngle))*ballSpeed;
         ball->ballVel.y = static_cast<float>(sin(randomAngle))*ballSpeed;
         balls.push_back(*ball);
     }
     ball = nullptr;
+
+    // TODO: Add code to create wall objects
+
+    LoadData();
 
     mTicksCount = 0;
 
@@ -73,6 +94,8 @@ void Game::RunLoop() {
 }
 
 void Game::Shutdown(){
+    UnloadData();
+    IMG_Quit();
     SDL_DestroyWindow(mWindow);
     SDL_DestroyRenderer(mRenderer);
     SDL_Quit();
@@ -94,6 +117,9 @@ void Game::ProcessInput() {
                 break;
         }
     }
+
+    // TODO: Implement Player and Controller components
+    // TODO: Add loop for processing player inputs
 
     mPaddleDir = 0;
     if(state[SDL_SCANCODE_W]){
@@ -125,35 +151,63 @@ void Game::UpdateGame() {
     // Update tick counts (for next frame)
     mTicksCount = SDL_GetTicks();
 
+    // Update all actors
+    mUpdatingActors = true;
+    for(auto &actor : mActors){
+        actor->Update(deltaTime);
+    }
+    mUpdatingActors = false;
+
+    // Move any pending actors to mActors
+    for(auto pending : mPendingActors){
+        mActors.emplace_back(pending);
+    }
+    mPendingActors.clear();
+
+    // Add any dead actors to a temp vector
+    std::vector<Actor*> deadActors;
+    for(auto actor : mActors){
+        if(actor->getState() == Actor::EDead){
+            deadActors.emplace_back(actor);
+        }
+    }
+
+    // Delete dead actors (which removes them from mActors)
+    for(auto actor : deadActors){
+        delete actor;
+    }
+
+    // TODO: Move paddle update into paddle Actor object ActorUpdate()
     // Based on input processed, move paddle up or down
     if(mPaddleDir != 0){
         mPaddlePos.y += mPaddleDir * 300.0f * deltaTime;
 
         // Wall collision
-        if(mPaddlePos.y < (paddleH)/2.0f + thickness){
-            mPaddlePos.y = (paddleH)/2.0f + thickness;
+        if(mPaddlePos.y < (PADDLE_HEIGHT)/2.0f + THICKNESS){
+            mPaddlePos.y = (PADDLE_HEIGHT)/2.0f + THICKNESS;
         }
-        else if(mPaddlePos.y > ( 768.0f - (paddleH)/2.0f - thickness)){
-            mPaddlePos.y = ( 768.0f - (paddleH)/2.0f - thickness);
+        else if(mPaddlePos.y > ( 768.0f - (PADDLE_HEIGHT)/2.0f - THICKNESS)){
+            mPaddlePos.y = ( 768.0f - (PADDLE_HEIGHT)/2.0f - THICKNESS);
         }
     }
 
+    // TODO: Move ball update into ball Actor object ActorUpdate()
     // Update the balls velocity depending on surface contact
     for(auto &ball : balls){
-        if(ball.ballPos.y - thickness/2.0f <= thickness && ball.ballVel.y < 0.0f)
+        if(ball.ballPos.y - THICKNESS/2.0f <= THICKNESS && ball.ballVel.y < 0.0f)
         {
             ball.ballVel.y *= -1;
         }
-        if(ball.ballPos.y + thickness/2.0f >= (768 - thickness) && ball.ballVel.y > 0.0f){
+        if(ball.ballPos.y + THICKNESS/2.0f >= (768 - THICKNESS) && ball.ballVel.y > 0.0f){
             ball.ballVel.y *= -1;
         }
-        if(ball.ballPos.x + thickness/2.0f >= (1028 - thickness) && ball.ballVel.x > 0.0f){
+        if(ball.ballPos.x + THICKNESS/2.0f >= (1028 - THICKNESS) && ball.ballVel.x > 0.0f){
             ball.ballVel.x *= -1;
         }
         int diff = abs(static_cast<int>(ball.ballPos.y) - static_cast<int>(mPaddlePos.y));
-        if(diff <= paddleH/2.0f
-           && ball.ballPos.x <= mPaddlePos.x + thickness
-           && ball.ballPos.x - thickness/2.0f > mPaddlePos.x
+        if(diff <= PADDLE_HEIGHT/2.0f
+           && ball.ballPos.x <= mPaddlePos.x + THICKNESS
+           && ball.ballPos.x - THICKNESS/2.0f > mPaddlePos.x
            && ball.ballVel.x < 0.0f){
             ball.ballVel.x *= -1.0f;
         }
@@ -166,6 +220,15 @@ void Game::UpdateGame() {
 }
 
 void Game::GenerateOutput() {
+
+    // TODO: Implement SpriteComponents and move all into objects
+    // TODO: Implement wall Actor and move all into objects
+    // TODO: Add loop for drawing all sprites owned by game
+
+    for(auto sprite : mSprites){
+        sprite->Draw(mRenderer);
+    }
+
     SDL_SetRenderDrawColor(
             mRenderer,
             0,   // R
@@ -186,9 +249,9 @@ void Game::GenerateOutput() {
 
     SDL_Rect leftWall{
             0,                   // X
-            thickness,           // y
-            3 * thickness,       // width
-            768 - 2 * thickness  // height
+            THICKNESS,           // y
+            3 * THICKNESS,       // width
+            768 - 2 * THICKNESS  // height
     };
 
     SDL_RenderFillRect(mRenderer, &leftWall);
@@ -205,39 +268,39 @@ void Game::GenerateOutput() {
             0,        // x
             0,        // y
             1024,     // Width
-            thickness // Height
+            THICKNESS // Height
     };
 
     SDL_Rect rightWall{
-            1024 - thickness, // x
+            1024 - THICKNESS, // x
             0,                // y
-            thickness,        // Width
+            THICKNESS,        // Width
             1024              // Height
     };
 
     SDL_Rect botWall{
             0,                // x
-            768 - thickness,  // y
+            768 - THICKNESS,  // y
             1024,             // Width
-            thickness         // Height
+            THICKNESS         // Height
     };
 
     SDL_Rect* ballImage = nullptr;
     for(auto &ball : balls){
         ballImage = new SDL_Rect();
-        ballImage->x = static_cast<int>(ball.ballPos.x - thickness / 2.0f);  // x
-        ballImage->y = static_cast<int>(ball.ballPos.y - thickness / 2.0f);  // y
-        ballImage->w = thickness;                                            // Width
-        ballImage->h = thickness;                                            // Height
+        ballImage->x = static_cast<int>(ball.ballPos.x - THICKNESS / 2.0f);  // x
+        ballImage->y = static_cast<int>(ball.ballPos.y - THICKNESS / 2.0f);  // y
+        ballImage->w = THICKNESS;                                            // Width
+        ballImage->h = THICKNESS;                                            // Height
         SDL_RenderFillRect(mRenderer, ballImage);
     }
     ballImage = nullptr;
 
     SDL_Rect paddle{
             static_cast<int>(mPaddlePos.x),                   // x
-            static_cast<int>(mPaddlePos.y - paddleH / 2.0f),  // y
-            thickness,                                        // Width
-            paddleH                                           // Height
+            static_cast<int>(mPaddlePos.y - PADDLE_HEIGHT / 2.0f),  // y
+            THICKNESS,                                        // Width
+            PADDLE_HEIGHT                                           // Height
     };
 
     SDL_RenderFillRect(mRenderer, &topWall);
@@ -246,4 +309,84 @@ void Game::GenerateOutput() {
     SDL_RenderFillRect(mRenderer, &paddle);
 
     SDL_RenderPresent(mRenderer);
+}
+
+// Implementation of game objects
+
+void Game::AddActor(class Actor* actor){
+    // If updating actors, need to add to pending
+    if(mUpdatingActors){
+        mPendingActors.emplace_back(actor);
+    }
+    else{
+        mActors.emplace_back(actor);
+    }
+}
+
+void Game::RemoveActor(class Actor* actor){
+    auto searchResult = std::find(mActors.begin(),mActors.end(),actor);
+    if(searchResult != mActors.end()){
+        std::iter_swap(searchResult, mActors.end() - 1);
+        mActors.pop_back();
+    }
+    else {
+        searchResult = std::find(mPendingActors.begin(), mPendingActors.end(), actor);
+        if (searchResult != mPendingActors.end()) {
+            std::iter_swap(searchResult, mPendingActors.end() - 1);
+            mPendingActors.pop_back();
+        }
+    }
+}
+
+void Game::AddSprite(class SpriteComponent* sprite){
+    int myDrawOrder = sprite->getDrawOrder();
+    auto iter = mSprites.begin();
+    for(; iter != mSprites.end(); ++iter){
+        if(myDrawOrder < (*iter)->getDrawOrder()){
+            break;
+        }
+    }
+    mSprites.insert(iter,sprite);
+}
+
+void Game::RemoveSprite(struct SpriteComponent *sprite) {
+    auto iter = std::find(mSprites.begin(), mSprites.end(), sprite);
+    mSprites.erase(iter);
+}
+
+SDL_Texture* Game::getTexture(const std::string &fileName) {
+    SDL_Texture* tex = nullptr;
+
+    auto iter = mTextures.find(fileName);
+    if(iter != mTextures.end()){
+        tex = iter->second;
+    }
+    else{
+        SDL_Surface* surf = IMG_Load(fileName.c_str());
+        if(!surf){
+            SDL_Log("Failed to load texture file %s", fileName.c_str());
+            return nullptr;
+        }
+
+        tex = SDL_CreateTextureFromSurface(mRenderer, surf);
+        SDL_FreeSurface(surf);
+        if(!tex){
+            SDL_Log("Failed to convert surface to texture for %s", fileName.c_str());
+            return nullptr;
+        }
+
+        mTextures.emplace(fileName.c_str(), tex);
+    }
+    return tex;
+}
+
+void Game::LoadData() {
+    // TODO: Once ball and paddle objects exist create them here
+    // TODO: Implement LoadData once components are done
+
+    // Create actor for the background
+}
+
+void Game::UnloadData() {
+    // TODO: Implement UnloadData once components are done
 }

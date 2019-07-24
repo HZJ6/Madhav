@@ -2,61 +2,76 @@
 // Created by Mike on 7/18/2019.
 //
 
-#ifndef MADHAV_GAME_H
-#define MADHAV_GAME_H
+#pragma once
 #include <SDL2/SDL.h>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
 #include <random>
 #include <ctime>
+#include <algorithm>
+#include <string>
+#include "Math.h"
+
+
+// TODO: Implement SpriteComponent, AnimSpriteComponent, BGspriteComponent
 
 class Game{
 public:
     Game();
-    // Initialize the game
     bool Initialize();
-    // Runs the game loop until the game is over
     void RunLoop();
-    // Shutdown the game
     void Shutdown();
-private:
-    struct Vector2{
-        float x;
-        float y;
-    };
 
+    void AddActor(class Actor* actor);
+    void RemoveActor(class Actor* actor);
+
+    void AddSprite(class SpriteComponent* sprite);
+    void RemoveSprite(class SpriteComponent* sprite);
+
+    SDL_Texture* getTexture(const std::string& fileName);
+private:
     struct Ball{
         Vector2 ballPos;
         Vector2 ballVel;
     };
 
-    // Helper functions for the game loop
     void ProcessInput();
     void UpdateGame();
     void GenerateOutput();
+    void LoadData();
+    void UnloadData();
 
-    // Window created by SDL
     SDL_Window* mWindow;
-    // Renderer created by SDL
     SDL_Renderer* mRenderer;
-    // Game should continue to run while...
+
     bool mIsRunning;
-    // Parameter for wall thickness
-    const Uint8 thickness = 30;
-    // Parameter for paddle height;
-    const Uint8 paddleH = 100;
-    // The paddle
-    Vector2 mPaddlePos;
-    // Container for the balls
-    std::vector<Ball> balls;
-    // Track the number of ticks
+    const int SCREEN_WIDTH = 1024;
+    const int SCREEN_HEIGHT = 768;
+    bool mUpdatingActors;
     Uint32 mTicksCount;
-    // Track paddle movement
-    int mPaddleDir;
-    // Game setup parameters
+
+    // Game specific setup parameters
     Uint8 ballCount = 3;
+
+    // Containers for the actors
+    std::unordered_map<std::string, SDL_Texture*> mTextures;
+    std::vector<class Actor*> mActors;
+    std::vector<class Actor*> mPendingActors;
+    std::vector<class PlayerComponent*> mPlayers;
+    std::vector<class SpriteComponent*> mSprites;
+
+
+    //TODO: Remove container once ball object implemented
+    std::vector<Ball> balls;
+
+    //TODO: Move these values to individual objects
+    const Uint8 THICKNESS = 30;
+    const Uint8 PADDLE_HEIGHT = 100;
     Uint16 ballSpeed = 500;
     Uint8 paddleSpeed = 2;
+    int mPaddleDir;
+    Vector2 mPaddlePos;
+
 };
 
-#endif //MADHAV_GAME_H
