@@ -14,7 +14,7 @@ public:
     void Update(float deltaTime) override;
     void Draw(SDL_Renderer* renderer) override;
 
-    void SetBGTexture(const std::vector<SDL_Texture*>& textures);
+    void SetBGTextures(const std::vector<SDL_Texture*>& textures);
 
     void SetScreenSize(const Vector2& size) { mScreenSize = size; }
     void SetScrollSpeed(float speed) { mScrollSpeed = speed; }

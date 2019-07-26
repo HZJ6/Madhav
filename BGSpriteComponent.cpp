@@ -15,7 +15,7 @@ void BGSpriteComponent::Update(float deltaTime) {
     SpriteComponent::Update(deltaTime);
     for(auto& bg : mBGTextures){
         bg.mOffset.x += mScrollSpeed * deltaTime;
-        if(bg.mOffset.x < mScreenSize.x){
+        if(bg.mOffset.x < -mScreenSize.x){
             bg.mOffset.x = (mBGTextures.size() - 1) * mScreenSize.x -1;
         }
     }
@@ -36,7 +36,7 @@ void BGSpriteComponent::Draw(SDL_Renderer *renderer) {
     }
 }
 
-void BGSpriteComponent::SetBGTexture(const std::vector<SDL_Texture *> &textures) {
+void BGSpriteComponent::SetBGTextures(const std::vector<SDL_Texture *> &textures) {
     int count = 0;
     for(auto tex : textures){
         BGTexture temp;
