@@ -8,27 +8,34 @@
 AnimSpriteComponent::AnimSpriteComponent(class Actor *owner, int drawOrder)
         : SpriteComponent(owner, drawOrder)
         , mCurrFrame(0.0f)
-        , mAnimFPS(24.0f){
+        , mAnimFPS(4.0f)
+        , mCurrAnim(0){
 
 }
 
 void AnimSpriteComponent::Update(float deltaTime) {
     SpriteComponent::Update(deltaTime);
 
-    if(mAnimTextures.size() > 0){
+    if(mAnimTextures[mCurrAnim].size() > 0){
         mCurrFrame += mAnimFPS * deltaTime;
-        while(mCurrFrame >= mAnimTextures.size()){
-            mCurrFrame -= mAnimTextures.size();
+        while(mCurrFrame >= mAnimTextures[mCurrAnim].size()){
+            mCurrFrame -= mAnimTextures[mCurrAnim].size();
+            mAnimOnce = false;
         }
 
-        SetTexture((mAnimTextures[static_cast<int>(mCurrFrame)]));
+        SetTexture((mAnimTextures[mCurrAnim][static_cast<int>(mCurrFrame)]));
     }
 }
 
-void AnimSpriteComponent::SetAnimTextures(const std::vector<SDL_Texture *> &textures) {
-    mAnimTextures = textures;
+void AnimSpriteComponent::SetCurrAnim(int currAnim){
+    if(!mAnimOnce || (mCurrFrame >= mAnimTextures[mCurrAnim].size())){
+        mCurrAnim = currAnim;
+    }
+}
+
+void AnimSpriteComponent::SetAnimTextures(int animState, const std::vector<SDL_Texture *> &textures) {
+    mAnimTextures.emplace(animState,textures);
     if(mAnimTextures.size() > 0){
         mCurrFrame = 0.0f;
-        SetTexture(mAnimTextures[0]);
     }
 }

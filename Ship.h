@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include "Actor.h"
+#include "AnimSpriteComponent.h"
 
 class Ship : public Actor {
 public:
@@ -15,7 +16,16 @@ public:
     float GetRightSpeed() const { return mRightSpeed; }
     float GetDownSpeed() const { return mDownSpeed; }
 private:
+    enum animState{
+        IDLE,
+        WALK,
+        JUMP,
+        PUNCH
+    };
+
     float mRightSpeed;
     float mDownSpeed;
+    AnimSpriteComponent* mAnim;
+    animState mCurrAnimState;
 };
 
