@@ -60,8 +60,8 @@ void Ship::UpdateActor(float deltaTime) {
     if(pos.x < 25.0f){
         pos.x = 25.0f;
     }
-    else if(pos.x > 500.0f){
-        pos.x = 500.0f;
+    else if(pos.x > 1024.0f){
+        pos.x = 1024.0f;
     }
     if(pos.y < 25.0f){
         pos.y = 25.0f;

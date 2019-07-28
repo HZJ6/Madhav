@@ -8,6 +8,7 @@
 #include "Ship.h"
 #include "SpriteComponent.h"
 #include "BGSpriteComponent.h"
+#include "TileMapComponent.h"
 
 // --- Constructors / Destructors ---
 Game::Game()
@@ -72,7 +73,6 @@ void Game::RunLoop() {
 
 void Game::Shutdown(){
     UnloadData();
-    SDL_Log(IMG_GetError());
     IMG_Quit();
     SDL_DestroyWindow(mWindow);
     SDL_DestroyRenderer(mRenderer);
@@ -236,7 +236,15 @@ void Game::LoadData() {
 
     // Create actor for the background (this doesn't need a subclass)
     Actor* temp = new Actor(this);
-    temp->setPosition(Vector2(512.0f, 384.0f));
+
+
+    TileMapComponent* tmap = new TileMapComponent(temp);
+    tmap->LoadTileMap_CSV("Assets/MapLayer3.csv");
+    tmap->LoadTileMap_CSV("Assets/MapLayer2.csv");
+    tmap->LoadTileMap_CSV("Assets/MapLayer1.csv");
+    tmap->SetTexture(getTexture("Assets/Tiles.png"));
+
+    /*temp->setPosition(Vector2(512.0f, 384.0f));
     // Create the "far back" background
     BGSpriteComponent* bg = new BGSpriteComponent(temp);
     bg->SetScreenSize(Vector2(1024.0f, 768.0f));
@@ -254,7 +262,7 @@ void Game::LoadData() {
             getTexture("Assets/Stars.png")
     };
     bg->SetBGTextures(bgtexs);
-    bg->SetScrollSpeed(-200.0f);
+    bg->SetScrollSpeed(-200.0f);*/
 }
 
 void Game::UnloadData() {
