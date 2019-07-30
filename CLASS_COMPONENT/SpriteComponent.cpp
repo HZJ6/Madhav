@@ -2,8 +2,8 @@
 // Created by Mike on 7/23/2019.
 //
 #include "SpriteComponent.h"
-#include "Actor.h"
-#include "Game.h"
+#include "../Actor.h"
+#include "../Game.h"
 
 SpriteComponent::SpriteComponent(class Actor *owner, int drawOrder)
         : Component(owner)

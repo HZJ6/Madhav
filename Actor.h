@@ -4,6 +4,7 @@
 
 #pragma once
 #include <vector>
+#include <cstdint>
 #include "Math.h"
 
 class Actor{
@@ -23,15 +24,21 @@ public:
     void Update(float deltaTime);
     // Updates all the components attached to the actor (not overrideable)
     void UpdateComponents(float deltaTime);
+    // ProcessInput function called from Game (not overrideable)
+    void ProcessInput(const uint8_t* keyState);
+
+    //Any actor-specific input code (overrideable)
+    virtual void ActorInput(const uint8_t* keyState) {}
     // Any actor-specific update code (overrideable)
-    virtual void UpdateActor(float deltaTime);
+    virtual void UpdateActor(float deltaTime) {}
 
     // Getters
     State getState() const { return mState;}
-    Vector2 getPosition() const { return mPosition; }
+    Vector2 getPosition() const{ return mPosition; }
     float getScale() const { return mScale; }
     float getRotation() const { return mRotation; }
     class Game* getGame() const { return mGame; }
+    Vector2 getForward() const { return Vector2(Math::Cos(mRotation), -Math::Sin(mRotation)); }
 
     // Setters
     void setState(const State state) { mState = state; }

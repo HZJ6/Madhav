@@ -5,10 +5,12 @@
 #include "SDL2/SDL_image.h"
 #include <algorithm>
 #include "Actor.h"
-#include "Ship.h"
-#include "SpriteComponent.h"
-#include "BGSpriteComponent.h"
-#include "TileMapComponent.h"
+#include "Random.h"
+#include "CLASS_ACTOR/Ship.h"
+#include "CLASS_ACTOR/Asteroid.h"
+#include "CLASS_COMPONENT/SpriteComponent.h"
+#include "CLASS_COMPONENT/BGSpriteComponent.h"
+#include "CLASS_COMPONENT/TileMapComponent.h"
 
 // --- Constructors / Destructors ---
 Game::Game()
@@ -56,6 +58,7 @@ bool Game::Initialize() {
         return false;
     }
 
+    Random::Init();
     LoadData();
 
     mTicksCount = 0;
@@ -99,7 +102,11 @@ void Game::ProcessInput() {
         mIsRunning = false;
     }
 
-    mShip->ProcessKeyboard(state);
+    mUpdatingActors = true;
+    for(auto actor : mActors){
+        actor->ProcessInput(state);
+    }
+    mUpdatingActors = false;
 }
 
 void Game::UpdateGame() {
@@ -229,22 +236,24 @@ SDL_Texture* Game::getTexture(const std::string &fileName) {
 }
 
 void Game::LoadData() {
-    // Create player's ship
+    const int ASTEROID_COUNT = 20;
+
+    for(int i = 0; i < ASTEROID_COUNT; ++i){
+        new Asteroid(this);
+    }
+
     mShip = new Ship(this);
-    mShip->setPosition(Vector2(100.0f, 384.0f));
-    mShip->setScale(1.5f);
+    mShip->setPosition(Vector2(1024.0f/2.0f,768.0f/2.0f));
 
-    // Create actor for the background (this doesn't need a subclass)
-    Actor* temp = new Actor(this);
-
-
-    TileMapComponent* tmap = new TileMapComponent(temp);
+    /*TileMapComponent* tmap = new TileMapComponent(temp);
     tmap->LoadTileMap_CSV("Assets/MapLayer3.csv");
     tmap->LoadTileMap_CSV("Assets/MapLayer2.csv");
     tmap->LoadTileMap_CSV("Assets/MapLayer1.csv");
-    tmap->SetTexture(getTexture("Assets/Tiles.png"));
+    tmap->SetTexture(getTexture("Assets/Tiles.png"));*/
 
-    /*temp->setPosition(Vector2(512.0f, 384.0f));
+    // Create actor for the background (this doesn't need a subclass)
+    Actor* temp = new Actor(this);
+    temp->setPosition(Vector2(512.0f, 384.0f));
     // Create the "far back" background
     BGSpriteComponent* bg = new BGSpriteComponent(temp);
     bg->SetScreenSize(Vector2(1024.0f, 768.0f));
@@ -262,7 +271,7 @@ void Game::LoadData() {
             getTexture("Assets/Stars.png")
     };
     bg->SetBGTextures(bgtexs);
-    bg->SetScrollSpeed(-200.0f);*/
+    bg->SetScrollSpeed(-200.0f);
 }
 
 void Game::UnloadData() {
@@ -279,4 +288,17 @@ void Game::UnloadData() {
         SDL_DestroyTexture(i.second);
     }
     mTextures.clear();
+}
+
+void Game::AddAsteroid(class Asteroid *ast) {
+    mAsteroids.emplace_back(ast);
+}
+
+void Game::RemoveAsteroid(class Asteroid *ast) {
+    auto iter = std::find(mAsteroids.begin(),
+                          mAsteroids.end(), ast);
+    if (iter != mAsteroids.end())
+    {
+        mAsteroids.erase(iter);
+    }
 }

@@ -3,7 +3,7 @@
 //
 
 #include "AnimSpriteComponent.h"
-#include "Math.h"
+#include "../Math.h"
 
 AnimSpriteComponent::AnimSpriteComponent(class Actor *owner, int drawOrder)
         : SpriteComponent(owner, drawOrder)

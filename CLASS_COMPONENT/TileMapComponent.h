@@ -4,10 +4,10 @@
 
 #pragma once
 #include "SpriteComponent.h"
-#include "Actor.h"
+#include "../Actor.h"
 #include <string>
 #include <vector>
-#include "Math.h"
+#include "../Math.h"
 
 class TileMapComponent : public SpriteComponent {
 public:

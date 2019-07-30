@@ -7,6 +7,8 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include "CLASS_ACTOR/Ship.h"
+#include "CLASS_ACTOR/Asteroid.h"
 
 class Game{
 public:
@@ -22,6 +24,10 @@ public:
     void RemoveSprite(class SpriteComponent* sprite);
 
     SDL_Texture* getTexture(const std::string& fileName);
+
+    void AddAsteroid(class Asteroid* ast);
+    void RemoveAsteroid(class Asteroid* ast);
+    std::vector<Asteroid*>& GetAsteroids() { return mAsteroids; }
 private:
     void ProcessInput();
     void UpdateGame();
@@ -44,6 +50,7 @@ private:
     Uint32 mTicksCount;
     bool mIsRunning;
 
-    class Ship* mShip; // Demos player object
+    Ship* mShip;
+    std::vector<Asteroid*> mAsteroids;
 };
 
