@@ -1,40 +1,35 @@
+// ----------------------------------------------------------------
+// From Game Programming in C++ by Sanjay Madhav
+// Copyright (C) 2017 Sanjay Madhav. All rights reserved.
 //
-// Created by Mike on 7/29/2019.
-//
+// Released under the BSD License
+// See LICENSE in root directory for full details.
+// ----------------------------------------------------------------
+
 #include "MoveComponent.h"
 #include "../Actor.h"
 
-MoveComponent::MoveComponent(class Actor *owner, int updateOrder)
-        : Component(owner, updateOrder)
-        , mAngularSpeed(0.0f)
-        , mSumOfForces(Vector2::Zero)
-        , mMass(10.0f)
-        , mVelocity(Vector2::Zero){
+MoveComponent::MoveComponent(class Actor* owner, int updateOrder)
+        :Component(owner, updateOrder)
+        ,mAngularSpeed(0.0f)
+        ,mForwardSpeed(0.0f)
+{
 
 }
 
-void MoveComponent::AddForce(Vector2 force){
-    mSumOfForces += force;
-}
-
-void MoveComponent::Update(float deltaTime) {
-    if(!Math::NearZero(mAngularSpeed)){
+void MoveComponent::Update(float deltaTime)
+{
+    if (!Math::NearZero(mAngularSpeed))
+    {
         float rot = mOwner->getRotation();
         rot += mAngularSpeed * deltaTime;
         mOwner->setRotation(rot);
     }
-    if(mSumOfForces.LengthSq() > 0 || (mVelocity.x != 0 || mVelocity.y !=0)){
+
+    if (!Math::NearZero(mForwardSpeed))
+    {
         Vector2 pos = mOwner->getPosition();
-        if(mMass != 0) {
-            Vector2 acc = Vector2(mSumOfForces.x / mMass, mSumOfForces.y / mMass);
-            mVelocity += acc * deltaTime;
-        }
-        pos += mVelocity * deltaTime;
-        if (pos.x < 0.0f - 32.0f) { pos.x = 1024.0f +32.0f; }
-        else if (pos.x > 1024.0f + 32.0f) { pos.x = 0.0f - 32.0f; }
-        if (pos.y < 0.0f - 32.0f) { pos.y = 768.0f + 32.0f; }
-        else if (pos.y > 768.0f + 32.0f) { pos.y = 0.0f - 32.0f; }
+        pos += mOwner->getForward() * mForwardSpeed * deltaTime;
         mOwner->setPosition(pos);
-        mSumOfForces = Vector2::Zero;
     }
 }

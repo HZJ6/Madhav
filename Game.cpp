@@ -6,11 +6,12 @@
 #include <algorithm>
 #include "Actor.h"
 #include "Random.h"
-#include "CLASS_ACTOR/Ship.h"
-#include "CLASS_ACTOR/Asteroid.h"
 #include "CLASS_COMPONENT/SpriteComponent.h"
-#include "CLASS_COMPONENT/BGSpriteComponent.h"
-#include "CLASS_COMPONENT/TileMapComponent.h"
+#include "CLASS_COMPONENT/AIComponent.h"
+#include "CLASS_COMPONENT/AIState.h"
+#include "CLASS_ACTOR/Grid.h"
+#include "CLASS_ACTOR/Enemy.h"
+
 
 // --- Constructors / Destructors ---
 Game::Game()
@@ -101,6 +102,19 @@ void Game::ProcessInput() {
     if(state[SDL_SCANCODE_ESCAPE]){
         mIsRunning = false;
     }
+    if (state[SDL_SCANCODE_B])
+    {
+        mGrid->BuildTower();
+    }
+
+    // Process mouse input
+    int x, y;
+    Uint32 buttons = SDL_GetMouseState(&x, &y);
+    if (SDL_BUTTON(buttons) & SDL_BUTTON_LEFT)
+    {
+        mGrid->ProcessClick(x, y);
+    }
+
 
     mUpdatingActors = true;
     for(auto actor : mActors){
@@ -236,42 +250,7 @@ SDL_Texture* Game::getTexture(const std::string &fileName) {
 }
 
 void Game::LoadData() {
-    const int ASTEROID_COUNT = 20;
-
-    for(int i = 0; i < ASTEROID_COUNT; ++i){
-        new Asteroid(this);
-    }
-
-    mShip = new Ship(this);
-    mShip->setPosition(Vector2(1024.0f/2.0f,768.0f/2.0f));
-
-    /*TileMapComponent* tmap = new TileMapComponent(temp);
-    tmap->LoadTileMap_CSV("Assets/MapLayer3.csv");
-    tmap->LoadTileMap_CSV("Assets/MapLayer2.csv");
-    tmap->LoadTileMap_CSV("Assets/MapLayer1.csv");
-    tmap->SetTexture(getTexture("Assets/Tiles.png"));*/
-
-    // Create actor for the background (this doesn't need a subclass)
-    Actor* temp = new Actor(this);
-    temp->setPosition(Vector2(512.0f, 384.0f));
-    // Create the "far back" background
-    BGSpriteComponent* bg = new BGSpriteComponent(temp);
-    bg->SetScreenSize(Vector2(1024.0f, 768.0f));
-    std::vector<SDL_Texture*> bgtexs = {
-            getTexture("Assets/Farback01.png"),
-            getTexture("Assets/Farback02.png")
-    };
-    bg->SetBGTextures(bgtexs);
-    bg->SetScrollSpeed(-100.0f);
-    // Create the closer background
-    bg = new BGSpriteComponent(temp, 50);
-    bg->SetScreenSize(Vector2(1024.0f, 768.0f));
-    bgtexs = {
-            getTexture("Assets/Stars.png"),
-            getTexture("Assets/Stars.png")
-    };
-    bg->SetBGTextures(bgtexs);
-    bg->SetScrollSpeed(-200.0f);
+    mGrid = new Grid(this);
 }
 
 void Game::UnloadData() {
@@ -290,15 +269,25 @@ void Game::UnloadData() {
     mTextures.clear();
 }
 
-void Game::AddAsteroid(class Asteroid *ast) {
-    mAsteroids.emplace_back(ast);
-}
+Enemy* Game::GetNearestEnemy(const Vector2& pos)
+{
+    Enemy* best = nullptr;
 
-void Game::RemoveAsteroid(class Asteroid *ast) {
-    auto iter = std::find(mAsteroids.begin(),
-                          mAsteroids.end(), ast);
-    if (iter != mAsteroids.end())
+    if (mEnemies.size() > 0)
     {
-        mAsteroids.erase(iter);
+        best = mEnemies[0];
+        // Save the distance squared of first enemy, and test if others are closer
+        float bestDistSq = (pos - mEnemies[0]->getPosition()).LengthSq();
+        for (size_t i = 1; i < mEnemies.size(); i++)
+        {
+            float newDistSq = (pos - mEnemies[i]->getPosition()).LengthSq();
+            if (newDistSq < bestDistSq)
+            {
+                bestDistSq = newDistSq;
+                best = mEnemies[i];
+            }
+        }
     }
+
+    return best;
 }

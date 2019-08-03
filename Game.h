@@ -7,8 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include "CLASS_ACTOR/Ship.h"
-#include "CLASS_ACTOR/Asteroid.h"
+#include "Math.h"
 
 class Game{
 public:
@@ -25,9 +24,9 @@ public:
 
     SDL_Texture* getTexture(const std::string& fileName);
 
-    void AddAsteroid(class Asteroid* ast);
-    void RemoveAsteroid(class Asteroid* ast);
-    std::vector<Asteroid*>& GetAsteroids() { return mAsteroids; }
+    class Grid* GetGrid() { return mGrid; }
+    std::vector<class Enemy*>& GetEnemies() { return mEnemies; }
+    Enemy* GetNearestEnemy(const Vector2& pos);
 private:
     void ProcessInput();
     void UpdateGame();
@@ -50,7 +49,8 @@ private:
     Uint32 mTicksCount;
     bool mIsRunning;
 
-    Ship* mShip;
-    std::vector<Asteroid*> mAsteroids;
+    Grid* mGrid;
+    std::vector<class Enemy*> mEnemies;
+    float mNextEnemy;
 };
 
